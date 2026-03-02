@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time System IDS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #1e1e1e; 
+            color: #fff; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        h1 { 
+            text-align: center; 
+            color: #00ff00; 
+            text-shadow: 0 0 10px #00ff00; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .status-bar { 
+            background: #333; 
+            padding: 15px; 
+            border-radius: 8px; 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        }
+        .status-item { font-size: 1.2em; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: #252526; 
+            border-radius: 8px; 
+            overflow: hidden; 
+        }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #3e3e42; }
+        th { background-color: #007acc; color: white; }
+        tr:hover { background-color: #2d2d30; }
+        .alert { color: #ff4444; font-weight: bold; }
+        .safe { color: #00ff00; }
+        #loading { text-align: center; margin-top: 50px; font-size: 1.5em; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Real-Time Malicious Activity Detector</h1>
+        <div class="status-bar">
+            <div class="status-item">Status: <span class="safe">Monitoring</span></div>
+            <div class="status-item">Scan Interval: 2s</div>
+        </div>
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>PID</th>
+                    <th>Process Name</th>
+                    <th>Executable Path</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div id="loading">Waiting for data stream...</div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var socket = io();
+            socket.on('new_data', function(msg) {
+                var tableBody = document.getElementById('tableBody');
+                var loading = document.getElementById('loading');
+                if(loading) loading.style.display = 'none';
+                var data = msg.data;
+                if (data.length === 0) { return; }
+                data.forEach(function(item) {
+                    var row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.timestamp}</td>
+                        <td>${item.pid}</td>
+                        <td>${item.name}</td>
+                        <td style="word-break: break-all; font-family: monospace; color: #aaa;">${item.exe}</td>
+                        <td class="alert">⚠️ ${item.reason}</td>
+                    `;
+                    tableBody.insertBefore(row, tableBody.firstChild);
+                    if (tableBody.children.length > 50) {
+                        tableBody.removeChild(tableBody.lastChild);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
